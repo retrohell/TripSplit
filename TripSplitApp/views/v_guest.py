@@ -1,11 +1,9 @@
-from django.shortcuts import render, redirect
+import json
 from django.http import JsonResponse 
 from django.views.decorators.csrf import csrf_exempt
-import json
 from ..models import Guest
 from django.db import IntegrityError
 from django.core import serializers
-
 
 #Payment, Group, Expense
 # Create POST 

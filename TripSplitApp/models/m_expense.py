@@ -1,5 +1,5 @@
 from django.db import models
-from .m_user import Guest
+from .m_guest import Guest
 import uuid
 
 class Expense(models.Model):
@@ -7,5 +7,5 @@ class Expense(models.Model):
     payer = models.ForeignKey(Guest, on_delete=models.RESTRICT, related_name='payer_expense')
     amount = models.FloatField()
     description = models.CharField(max_length=100)
-    created_at = models.DateField()
+    created_at = models.DateField(auto_now_add=True)
     updated_at = models.DateField()

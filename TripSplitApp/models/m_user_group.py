@@ -1,5 +1,5 @@
 from django.db import models
-from .m_user import Guest
+from .m_guest import Guest
 from .m_group import Group
    
 class UserGroup(models.Model):
