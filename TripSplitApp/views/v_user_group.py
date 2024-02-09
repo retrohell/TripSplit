@@ -1,29 +1,46 @@
-import json
+from ..models import UserGroup
+from rest_framework.views import APIView
 from django.http import JsonResponse
-from django.db import IntegrityError
-from ..models import Group, Guest, UserGroup
-from django.views.decorators.csrf import csrf_exempt
-from django.core import serializers
+from ..serializers.s_user_group import ReadUserGroupSerializer, WriteUserGroupSerializer
+from rest_framework.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist
 
-@csrf_exempt
-
-def createUserGroup(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
+class UserGroupView(APIView):
+    def post(self, request):
+        data = request.data
+        usergroupserializer = WriteUserGroupSerializer(data=data)
         try:
-            group = UserGroup.objects.create(
-                guest_id = Guest.objects.get(id=data['guest_id']),
-                group_id = Group.objects.get(id=data['group_id']),
-            )
-            group.save()
-            return JsonResponse(data, status=200)
-        except IntegrityError as e:
+            if usergroupserializer.is_valid(raise_exception=True):
+                usergroupserializer.save()
+                return JsonResponse(usergroupserializer.data, status=201)
+        except ValidationError as e:
             print(e)
-            return JsonResponse({'error': 'Error creating group'}, status=400)
+            return JsonResponse({'message': 'Invalid data'}, status=400)
         
-def getUserGroup(request, id):
-    if request.method == 'GET':
-        group = UserGroup.objects.get(id=id)
-        group = serializers.serialize('json', [group,])
-        json_data = json.loads(group)
-        return JsonResponse(json_data, status=200, safe=False)
+    def get(self, request, id):
+        try:
+            usergroup = UserGroup.objects.get(id=id)
+            dataserilizer = ReadUserGroupSerializer(usergroup).data
+            return JsonResponse(dataserilizer, safe=False, status=200)
+        except ObjectDoesNotExist:
+            return JsonResponse({'message': 'User group does not exist'}, status=404)
+        
+    def put(self, request, id):
+        try:
+            data = request.data
+            usergroup = UserGroup.objects.get(id=id)
+            usergroupserializer = WriteUserGroupSerializer(usergroup, data=data, partial=True)
+            if usergroupserializer.is_valid(raise_exception=True):
+                usergroupserializer.save()
+                return JsonResponse(usergroupserializer.data, status=200)
+        except (ValidationError, ObjectDoesNotExist) as e:
+            print(e)
+            return JsonResponse({'message': 'Invalid data'}, status=400)
+
+    def delete(self, request, id):
+        try:
+            usergroup = UserGroup.objects.get(id=id)
+            usergroup.delete()
+            return JsonResponse({'message': 'User group deleted successfully'}, status=200)
+        except ObjectDoesNotExist:
+            return JsonResponse({'message': 'User group does not exist'}, status=404)

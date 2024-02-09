@@ -1,27 +1,46 @@
-import json
-from django.http import JsonResponse
-from django.db import IntegrityError
 from ..models import Group
-from django.views.decorators.csrf import csrf_exempt
-from django.core import serializers
+from rest_framework.views import APIView
+from django.http import JsonResponse
+from ..serializers.s_group import ReadGroupSerializer, WriteGroupSerializer
+from rest_framework.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist
 
-@csrf_exempt
-def createGroup(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
+class GroupView(APIView):
+    def post(self, request):
+        data = request.data
+        groupserializer = WriteGroupSerializer(data=data)
         try:
-            group = Group.objects.create(
-                name = data['name']
-            )
-            group.save()
-            return JsonResponse(data, status=200)
-        except IntegrityError as e:
+            if groupserializer.is_valid(raise_exception=True):
+                groupserializer.save()
+                return JsonResponse(groupserializer.data, status=201)
+        except ValidationError as e:
             print(e)
-            return JsonResponse({'error': 'Error creating expense'}, status=400)
+            return JsonResponse({'message': 'Invalid data'}, status=400)
+        
+    def get(self, request, id):
+        try:
+            group = Group.objects.get(id=id)
+            dataserilizer = ReadGroupSerializer(group).data
+            return JsonResponse(dataserilizer, safe=False, status=200)
+        except ObjectDoesNotExist:
+            return JsonResponse({'message': 'Group does not exist'}, status=404)
+        
+    def put(self, request, id):
+        try:
+            data = request.data
+            group = Group.objects.get(id=id)
+            groupserializer = WriteGroupSerializer(group, data=data, partial=True)
+            if groupserializer.is_valid(raise_exception=True):
+                groupserializer.save()
+                return JsonResponse(groupserializer.data, status=200)
+        except (ValidationError, ObjectDoesNotExist) as e:
+            print(e)
+            return JsonResponse({'message': 'Invalid data'}, status=400)
 
-def getGroup(request, id):
-    if request.method == 'GET':
-        group = Group.objects.get(id=id)
-        group = serializers.serialize('json', [group,])
-        json_data = json.loads(group)
-        return JsonResponse(json_data, status=200, safe=False)
+    def delete(self, request, id):
+        try:
+            group = Group.objects.get(id=id)
+            group.delete()
+            return JsonResponse({'message': 'Group deleted successfully'}, status=200)
+        except ObjectDoesNotExist:
+            return JsonResponse({'message': 'Group does not exist'}, status=404)

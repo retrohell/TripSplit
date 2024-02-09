@@ -1,29 +1,46 @@
-import json
+from ..models import Payment
+from rest_framework.views import APIView
+from ..serializers.s_payment import ReadPaymentSerializer, WritePaymentSerializer
 from django.http import JsonResponse
-from django.db import IntegrityError
-from ..models import Payment, Guest
-from django.views.decorators.csrf import csrf_exempt
-from django.core import serializers
+from rest_framework.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist
 
-@csrf_exempt
-def createPayment(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
+class PaymentView(APIView):
+    def post(self, request):
+        data = request.data
+        paymentserializer = WritePaymentSerializer(data=data)
         try:
-            payment = Payment.objects.create(
-                payer_id = Guest.objects.get(id=data['payer_id']), # This is a foreign key from the Guest model
-                receiver_id = Guest.objects.get(id=data['receiver_id']), # This is a foreign key from the Guest model
-                amount = data['amount'],
-            )
-            payment.save()
-            return JsonResponse(data, status=200)
-        except IntegrityError as e:
+            if paymentserializer.is_valid(raise_exception=True):
+                paymentserializer.save()
+                return JsonResponse(paymentserializer.data, status=201)
+        except ValidationError as e:
             print(e)
-            return JsonResponse({'error': 'Error creating payment'}, status=400)
+            return JsonResponse({'message': 'Invalid data'}, status=400)
         
-def getPayment(request, id):
-    if request.method == 'GET':
-        payment = Payment.objects.get(id=id)
-        payment = serializers.serialize('json', [payment,])
-        json_data = json.loads(payment)
-        return JsonResponse(json_data, status=200, safe=False)
+    def get(self, request, id):
+        try:
+            payment = Payment.objects.get(id=id)
+            dataserilizer = ReadPaymentSerializer(payment).data
+            return JsonResponse(dataserilizer, safe=False, status=200)
+        except ObjectDoesNotExist:
+            return JsonResponse({'message': 'Payment does not exist'}, status=404)
+        
+    def put(self, request, id):
+        try:
+            data = request.data
+            payment = Payment.objects.get(id=id)
+            paymentserializer = WritePaymentSerializer(payment, data=data, partial=True)
+            if paymentserializer.is_valid(raise_exception=True):
+                paymentserializer.save()
+                return JsonResponse(paymentserializer.data, status=200)
+        except (ValidationError, ObjectDoesNotExist) as e:
+            print(e)
+            return JsonResponse({'message': 'Invalid data'}, status=400)
+
+    def delete(self, request, id):
+        try:
+            payment = Payment.objects.get(id=id)
+            payment.delete()
+            return JsonResponse({'message': 'Payment deleted successfully'}, status=200)
+        except ObjectDoesNotExist:
+            return JsonResponse({'message': 'Payment does not exist'}, status=404)

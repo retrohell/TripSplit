@@ -1,33 +1,46 @@
-import json
+from ..models import Expense
+from rest_framework.views import APIView
 from django.http import JsonResponse
-from django.db import IntegrityError
-from django.core import serializers
-from ..models import Expense, Guest
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.timezone import localdate
+from ..serializers.s_expense import ReadExpenseSerializer, WriteExpenseSerializer
+from rest_framework.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist
 
-# 23e63dbd-05cd-41a1-8e1d-b492cc7f95c8
-
-@csrf_exempt
-def createExpense(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
+class ExpenseView(APIView):
+    def post(self, request):
+        data = request.data
+        expenseserializer = WriteExpenseSerializer(data=data)
         try:
-            expense = Expense.objects.create(
-                payer = Guest.objects.get(id=data['guest_id']), # This is a foreign key from the Guest model
-                amount = data['amount'],
-                description = data['description'],
-                updated_at = localdate()
-            )
-            expense.save()
-            return JsonResponse(data, status=200)
-        except IntegrityError as e:
+            if expenseserializer.is_valid(raise_exception=True):
+                expenseserializer.save()
+                return JsonResponse(expenseserializer.data, status=201)
+        except ValidationError as e:
             print(e)
-            return JsonResponse({'error': 'Error creating expense'}, status=400)
+            return JsonResponse({'message': 'Invalid data'}, status=400)
         
-def getExpense(request, id):
-    if request.method == 'GET':
-        expense = Expense.objects.get(id=id)
-        expense = serializers.serialize('json', [expense,])
-        json_data = json.loads(expense)
-        return JsonResponse(json_data, status=200, safe=False)
+    def get(self, request, id):
+        try:
+            expense = Expense.objects.get(id=id)
+            dataserilizer = ReadExpenseSerializer(expense).data
+            return JsonResponse(dataserilizer, safe=False, status=200)
+        except ObjectDoesNotExist:
+            return JsonResponse({'message': 'Expense does not exist'}, status=404)
+        
+    def put(self, request, id):
+        try:
+            data = request.data
+            expense = Expense.objects.get(id=id)
+            expenseserializer = WriteExpenseSerializer(expense, data=data, partial=True)
+            if expenseserializer.is_valid(raise_exception=True):
+                expenseserializer.save()
+                return JsonResponse(expenseserializer.data, status=200)
+        except (ValidationError, ObjectDoesNotExist) as e:
+            print(e)
+            return JsonResponse({'message': 'Invalid data'}, status=400)
+
+    def delete(self, request, id):
+        try:
+            expense = Expense.objects.get(id=id)
+            expense.delete()
+            return JsonResponse({'message': 'Expense deleted successfully'}, status=200)
+        except ObjectDoesNotExist:
+            return JsonResponse({'message': 'Expense does not exist'}, status=404)
