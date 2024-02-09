@@ -1,13 +1,25 @@
-from ..models import Expense
+from ..models import Expense, Guest
 from rest_framework.views import APIView
 from django.http import JsonResponse
 from ..serializers.s_expense import ReadExpenseSerializer, WriteExpenseSerializer
 from rest_framework.exceptions import ValidationError
 from django.core.exceptions import ObjectDoesNotExist
+from rest_framework import authentication, permissions
+import rest_framework_simplejwt
 
 class ExpenseView(APIView):
+    # Autenticacion y permisos
+    authentication_classes = [rest_framework_simplejwt.authentication.JWTAuthentication,]
+    permission_classes = [permissions.IsAuthenticated,]
+    
     def post(self, request):
         data = request.data
+        # Se obtiene el id del usuario que esta realizando la peticion
+        try:
+            guest = Guest.objects.get(user_id=request.user.id)
+            data['payer'] = guest.id
+        except ObjectDoesNotExist:
+            return JsonResponse({'message': 'Guest does not exist'}, status=404)
         expenseserializer = WriteExpenseSerializer(data=data)
         try:
             if expenseserializer.is_valid(raise_exception=True):
