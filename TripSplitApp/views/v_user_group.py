@@ -4,8 +4,14 @@ from django.http import JsonResponse
 from ..serializers.s_user_group import ReadUserGroupSerializer, WriteUserGroupSerializer
 from rest_framework.exceptions import ValidationError
 from django.core.exceptions import ObjectDoesNotExist
+from rest_framework import authentication, permissions
+from rest_framework_simplejwt import authentication
+
 
 class UserGroupView(APIView):
+    authentication_classes = [authentication.JWTAuthentication,]
+    permission_classes = [permissions.IsAuthenticated,]
+
     def post(self, request):
         data = request.data
         usergroupserializer = WriteUserGroupSerializer(data=data)
@@ -16,7 +22,7 @@ class UserGroupView(APIView):
         except ValidationError as e:
             print(e)
             return JsonResponse({'message': 'Invalid data'}, status=400)
-        
+
     def get(self, request, id):
         try:
             usergroup = UserGroup.objects.get(id=id)
@@ -24,12 +30,13 @@ class UserGroupView(APIView):
             return JsonResponse(dataserilizer, safe=False, status=200)
         except ObjectDoesNotExist:
             return JsonResponse({'message': 'User group does not exist'}, status=404)
-        
+
     def put(self, request, id):
         try:
             data = request.data
             usergroup = UserGroup.objects.get(id=id)
-            usergroupserializer = WriteUserGroupSerializer(usergroup, data=data, partial=True)
+            usergroupserializer = WriteUserGroupSerializer(
+                usergroup, data=data, partial=True)
             if usergroupserializer.is_valid(raise_exception=True):
                 usergroupserializer.save()
                 return JsonResponse(usergroupserializer.data, status=200)

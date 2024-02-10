@@ -4,8 +4,13 @@ from django.http import JsonResponse
 from ..serializers.s_group import ReadGroupSerializer, WriteGroupSerializer
 from rest_framework.exceptions import ValidationError
 from django.core.exceptions import ObjectDoesNotExist
+from rest_framework import authentication, permissions
+from rest_framework_simplejwt import authentication
 
 class GroupView(APIView):
+    authentication_classes = [authentication.JWTAuthentication,]
+    permission_classes = [permissions.IsAuthenticated,]
+    
     def post(self, request):
         data = request.data
         groupserializer = WriteGroupSerializer(data=data)

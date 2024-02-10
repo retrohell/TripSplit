@@ -4,8 +4,13 @@ from ..serializers.s_payment import ReadPaymentSerializer, WritePaymentSerialize
 from django.http import JsonResponse
 from rest_framework.exceptions import ValidationError
 from django.core.exceptions import ObjectDoesNotExist
+from rest_framework import authentication, permissions
+from rest_framework_simplejwt import authentication
 
 class PaymentView(APIView):
+    permission_classes = [permissions.IsAuthenticated,]
+    authentication_classes = [authentication.JWTAuthentication,]
+    
     def post(self, request):
         data = request.data
         paymentserializer = WritePaymentSerializer(data=data)
