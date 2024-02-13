@@ -8,7 +8,7 @@ from django.core.exceptions import ObjectDoesNotExist
 import rest_framework_simplejwt
 from rest_framework import authentication, permissions
 from ..serializers.s_user import WriteUserSerializer, ReadUserSerializer
-
+from django.db import transaction # Para operaciones atomicas
 
 class GuestView(APIView):
     # authentication_classes = [rest_framework_simplejwt.authentication.JWTAuthentication,]
@@ -16,17 +16,18 @@ class GuestView(APIView):
 
     def post(self, request):
         data = request.data
-         
+
         # Validar operacion atomica de la creacion de usuario y guest
         try:
-            newUserSerializer = WriteUserSerializer(data=data)
-            if newUserSerializer.is_valid(raise_exception=True):
-                newUserSerializer.save()
-                data['user'] = newUserSerializer.data['id']
-            guestserializer = WriteGuestSerializer(data=data)
-            if guestserializer.is_valid(raise_exception=True):
-                guestserializer.save()
-                return JsonResponse(guestserializer.data, status=201)
+            with transaction.atomic(): # Para operaciones atomicas
+                newUserSerializer = WriteUserSerializer(data=data)
+                if newUserSerializer.is_valid(raise_exception=True):
+                    newUserSerializer.save()
+                    data['user'] = newUserSerializer.data['id']
+                guestserializer = WriteGuestSerializer(data=data)
+                if guestserializer.is_valid(raise_exception=True):
+                    guestserializer.save()
+                    return JsonResponse(guestserializer.data, status=201)
         except ValidationError as e:
             print(e)
             return JsonResponse({'message': 'Invalid data'}, status=400)

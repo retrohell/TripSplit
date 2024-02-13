@@ -1,12 +1,14 @@
 import json
-from django.http import JsonResponse 
+from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from ..models import Guest
 from django.db import IntegrityError
 from django.core import serializers
 
-#Payment, Group, Expense
-# Create POST 
+# Payment, Group, Expense
+# Create POST
+
+
 @csrf_exempt
 def createGuest(request):
     if request.method == 'POST':
@@ -14,17 +16,18 @@ def createGuest(request):
         print(data['nombre'])
         try:
             guest = Guest.objects.create(
-                username = data['nombre'],
-                email = data['email'],
-                password = data['password'],
-                user_id = data['user_id']
+                username=data['nombre'],
+                email=data['email'],
+                password=data['password'],
+                user_id=data['user_id']
             )
             guest.save()
             return JsonResponse(data, status=200)
         except IntegrityError as e:
             print(e)
             return JsonResponse({'error': 'Error creating guest'}, status=400)
-        
+
+
 def getGuest(request, id):
     if request.method == 'GET':
         guest = Guest.objects.get(id=id)

@@ -7,10 +7,11 @@ from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import authentication, permissions
 from rest_framework_simplejwt import authentication
 
+
 class GroupView(APIView):
     authentication_classes = [authentication.JWTAuthentication,]
     permission_classes = [permissions.IsAuthenticated,]
-    
+
     def post(self, request):
         data = request.data
         groupserializer = WriteGroupSerializer(data=data)
@@ -21,7 +22,7 @@ class GroupView(APIView):
         except ValidationError as e:
             print(e)
             return JsonResponse({'message': 'Invalid data'}, status=400)
-        
+
     def get(self, request, id):
         try:
             group = Group.objects.get(id=id)
@@ -29,12 +30,13 @@ class GroupView(APIView):
             return JsonResponse(dataserilizer, safe=False, status=200)
         except ObjectDoesNotExist:
             return JsonResponse({'message': 'Group does not exist'}, status=404)
-        
+
     def put(self, request, id):
         try:
             data = request.data
             group = Group.objects.get(id=id)
-            groupserializer = WriteGroupSerializer(group, data=data, partial=True)
+            groupserializer = WriteGroupSerializer(
+                group, data=data, partial=True)
             if groupserializer.is_valid(raise_exception=True):
                 groupserializer.save()
                 return JsonResponse(groupserializer.data, status=200)

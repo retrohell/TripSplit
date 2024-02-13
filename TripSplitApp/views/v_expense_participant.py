@@ -7,10 +7,11 @@ from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import authentication, permissions
 from rest_framework_simplejwt import authentication
 
+
 class ExpenseParticipantView(APIView):
     authentication_classes = [authentication.JWTAuthentication,]
     permission_classes = [permissions.IsAuthenticated,]
-    
+
     def post(self, request):
         data = request.data
         expenseserializer = WriteExpenseParticipantSerializer(data=data)
@@ -21,7 +22,7 @@ class ExpenseParticipantView(APIView):
         except ValidationError as e:
             print(e)
             return JsonResponse({'message': 'Invalid data'}, status=400)
-        
+
     def get(self, request, id):
         try:
             expense = ExpenseParticipant.objects.get(id=id)
@@ -29,12 +30,13 @@ class ExpenseParticipantView(APIView):
             return JsonResponse(dataserilizer, safe=False, status=200)
         except ObjectDoesNotExist:
             return JsonResponse({'message': 'Expense does not exist'}, status=404)
-        
+
     def put(self, request, id):
         try:
             data = request.data
             expense = ExpenseParticipant.objects.get(id=id)
-            expenseserializer = WriteExpenseParticipantSerializer(expense, data=data, partial=True)
+            expenseserializer = WriteExpenseParticipantSerializer(
+                expense, data=data, partial=True)
             if expenseserializer.is_valid(raise_exception=True):
                 expenseserializer.save()
                 return JsonResponse(expenseserializer.data, status=200)
@@ -49,7 +51,6 @@ class ExpenseParticipantView(APIView):
             return JsonResponse({'message': 'Expense participant deleted successfully'}, status=200)
         except ObjectDoesNotExist:
             return JsonResponse({'message': 'Expense participant does not exist'}, status=404)
-
 
 
 # import json
@@ -73,7 +74,7 @@ class ExpenseParticipantView(APIView):
 #         except IntegrityError as e:
 #             print(e)
 #             return JsonResponse({'error': 'Error creating expense participant'}, status=400)
-        
+
 # def getExpenseParticipant(request, id):
 #     if request.method == 'GET':
 #         expenseParticipant = ExpenseParticipant.objects.get(id=id)

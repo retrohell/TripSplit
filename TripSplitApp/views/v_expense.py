@@ -7,11 +7,13 @@ from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import authentication, permissions
 import rest_framework_simplejwt
 
+
 class ExpenseView(APIView):
     # Autenticacion y permisos
-    authentication_classes = [rest_framework_simplejwt.authentication.JWTAuthentication,]
+    authentication_classes = [
+        rest_framework_simplejwt.authentication.JWTAuthentication,]
     permission_classes = [permissions.IsAuthenticated,]
-    
+
     def post(self, request):
         data = request.data
         # Se obtiene el id del usuario que esta realizando la peticion
@@ -28,7 +30,7 @@ class ExpenseView(APIView):
         except ValidationError as e:
             print(e)
             return JsonResponse({'message': 'Invalid data'}, status=400)
-        
+
     def get(self, request, id):
         try:
             expense = Expense.objects.get(id=id)
@@ -36,12 +38,13 @@ class ExpenseView(APIView):
             return JsonResponse(dataserilizer, safe=False, status=200)
         except ObjectDoesNotExist:
             return JsonResponse({'message': 'Expense does not exist'}, status=404)
-        
+
     def put(self, request, id):
         try:
             data = request.data
             expense = Expense.objects.get(id=id)
-            expenseserializer = WriteExpenseSerializer(expense, data=data, partial=True)
+            expenseserializer = WriteExpenseSerializer(
+                expense, data=data, partial=True)
             if expenseserializer.is_valid(raise_exception=True):
                 expenseserializer.save()
                 return JsonResponse(expenseserializer.data, status=200)
