@@ -1,4 +1,4 @@
-from ..models import ExpenseParticipant
+from ..models import ExpenseParticipant, Guest
 from rest_framework.views import APIView
 from django.http import JsonResponse
 from ..serializers.s_expense_participant import ReadExpenseParticipantSerializer, WriteExpenseParticipantSerializer
@@ -52,6 +52,19 @@ class ExpenseParticipantView(APIView):
         except ObjectDoesNotExist:
             return JsonResponse({'message': 'Expense participant does not exist'}, status=404)
 
+
+class ExpenseParticipantViewList(APIView):
+    authentication_classes = [authentication.JWTAuthentication,]
+    permission_classes = [permissions.IsAuthenticated,]
+
+    def get(self, request):
+        try:
+            guest = Guest.objects.get(user_id=request.user.id)
+            expenses = ExpenseParticipant.objects.filter(participant=guest)
+            expenseParticipantSerializer = ReadExpenseParticipantSerializer(expenses, many=True)
+            return JsonResponse(expenseParticipantSerializer.data, safe=False, status=200)
+        except ObjectDoesNotExist:
+            return JsonResponse({'message': 'Expense participant does not exist'}, status=404)
 
 # import json
 # from django.http import JsonResponse

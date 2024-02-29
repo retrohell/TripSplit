@@ -59,3 +59,18 @@ class ExpenseView(APIView):
             return JsonResponse({'message': 'Expense deleted successfully'}, status=200)
         except ObjectDoesNotExist:
             return JsonResponse({'message': 'Expense does not exist'}, status=404)
+
+
+class ExpenseViewList(APIView):
+    authentication_classes = [
+        rest_framework_simplejwt.authentication.JWTAuthentication,]
+    permission_classes = [permissions.IsAuthenticated,]
+
+    def get(self, request):
+        try:
+            guest = Guest.objects.get(user_id=request.user.id)
+            expenses = Expense.objects.filter(payer=guest)
+            expenseSerializer = ReadExpenseSerializer(expenses, many=True)
+            return JsonResponse(expenseSerializer.data, safe=False, status=200)
+        except ObjectDoesNotExist:
+            return JsonResponse({'message': 'There are no expenses'}, status=404)

@@ -1,4 +1,4 @@
-from .v_guest import *
+
 from .v_group import *
 from .v_expense import *
 from .v_payment import *

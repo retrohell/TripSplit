@@ -1,4 +1,4 @@
-from ..models import Payment
+from ..models import Payment, Guest
 from rest_framework.views import APIView
 from ..serializers.s_payment import ReadPaymentSerializer, WritePaymentSerializer
 from django.http import JsonResponse
@@ -49,5 +49,20 @@ class PaymentView(APIView):
             payment = Payment.objects.get(id=id)
             payment.delete()
             return JsonResponse({'message': 'Payment deleted successfully'}, status=200)
+        except ObjectDoesNotExist:
+            return JsonResponse({'message': 'Payment does not exist'}, status=404)
+
+
+class PaymentViewList(APIView):
+    permission_classes = [permissions.IsAuthenticated,]
+    authentication_classes = [authentication.JWTAuthentication,]
+
+    def get(self, request):
+        try:
+            guest = Guest.objects.get(user_id=request.user.id)
+            payments = Payment.objects.filter(payer_id=guest.id)
+            serializer = ReadPaymentSerializer(payments, many=True)
+            return JsonResponse(serializer.data, safe=False, status=200)
+
         except ObjectDoesNotExist:
             return JsonResponse({'message': 'Payment does not exist'}, status=404)

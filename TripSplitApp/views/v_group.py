@@ -51,3 +51,15 @@ class GroupView(APIView):
             return JsonResponse({'message': 'Group deleted successfully'}, status=200)
         except ObjectDoesNotExist:
             return JsonResponse({'message': 'Group does not exist'}, status=404)
+
+class GroupViewList(APIView):
+    permission_classes = [permissions.IsAuthenticated,]
+    authentication_classes = [authentication.JWTAuthentication,]
+
+    def get(self, request):
+        try:    
+            groups = Group.objects.all()
+            serializer = ReadGroupSerializer(groups, many=True)
+            return JsonResponse(serializer.data, safe=False, status=200)
+        except ObjectDoesNotExist:
+            return JsonResponse({'message': 'Group does not exist'}, status=404)

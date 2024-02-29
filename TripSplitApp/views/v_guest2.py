@@ -5,14 +5,14 @@ from django.http import JsonResponse
 from ..serializers.s_guest import ReadGuestSerializer, WriteGuestSerializer
 from rest_framework.exceptions import ValidationError
 from django.core.exceptions import ObjectDoesNotExist
-import rest_framework_simplejwt
-from rest_framework import authentication, permissions
+from rest_framework_simplejwt import authentication
+from rest_framework import permissions
 from ..serializers.s_user import WriteUserSerializer, ReadUserSerializer
 from django.db import transaction # Para operaciones atomicas
 
 class GuestView(APIView):
-    # authentication_classes = [rest_framework_simplejwt.authentication.JWTAuthentication,]
-    # permission_classes = [permissions.IsAuthenticated,]
+    permission_classes = [permissions.IsAuthenticated,]
+    authentication_classes = [authentication.JWTAuthentication,]
 
     def post(self, request):
         data = request.data
@@ -41,9 +41,10 @@ class GuestView(APIView):
         # )
         # return JsonResponse({'guest': guest.id}, status=201)
 
-    def get(self, request, id):
+    def get(self, request):
         try:
-            guest = Guest.objects.get(id=id)
+            print(request.user.username)
+            guest = Guest.objects.get(user=request.user.id)
             dataserilizer = ReadGuestSerializer(guest).data
             return JsonResponse(dataserilizer, safe=False, status=200)
         except ObjectDoesNotExist:
@@ -77,3 +78,4 @@ class GuestView(APIView):
         guest = Guest.objects.get(id=id)
         guest.delete()
         return JsonResponse({'message': 'Guest deleted successfully'}, status=200)
+

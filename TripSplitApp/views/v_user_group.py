@@ -1,4 +1,4 @@
-from ..models import UserGroup
+from ..models import UserGroup, Guest
 from rest_framework.views import APIView
 from django.http import JsonResponse
 from ..serializers.s_user_group import ReadUserGroupSerializer, WriteUserGroupSerializer
@@ -49,5 +49,18 @@ class UserGroupView(APIView):
             usergroup = UserGroup.objects.get(id=id)
             usergroup.delete()
             return JsonResponse({'message': 'User group deleted successfully'}, status=200)
+        except ObjectDoesNotExist:
+            return JsonResponse({'message': 'User group does not exist'}, status=404)
+
+class UserGroupViewList(APIView):
+    permission_classes = [permissions.IsAuthenticated,]
+    authentication_classes = [authentication.JWTAuthentication,]
+
+    def get(self, request):
+        try:
+            guest = Guest.objects.get(user_id=request.user.id)
+            usergroup = UserGroup.objects.filter(guest_id=guest.id)
+            usergroupserializer = ReadUserGroupSerializer(usergroup, many=True)
+            return JsonResponse(usergroupserializer.data, safe=False, status=200)
         except ObjectDoesNotExist:
             return JsonResponse({'message': 'User group does not exist'}, status=404)
